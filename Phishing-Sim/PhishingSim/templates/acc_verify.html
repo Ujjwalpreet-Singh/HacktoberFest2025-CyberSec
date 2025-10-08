@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Campaign | PhishingSim Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>async function sendCampaign(event) {
+    event.preventDefault();
+
+    const name = document.getElementById("campaign-name").value;
+    const target_emails = document.getElementById("target-emails").value.trim();
+    const subject = document.getElementById("email-subject").value;
+    const bodyText = document.getElementById("email-body").value;
+
+    // Split emails into an array and remove any empty strings
+    const emailList = target_emails.split(',').map(email => email.trim()).filter(email => email !== "");
+
+    if (emailList.length === 0) {
+        alert("Please provide at least one valid email.");
+        return;
+    }
+
+    const baseUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  ? "http://127.0.0.1:5000"
+  : "https://production-server.com";
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Step 1: Loop through each email
+    for (let target_email of emailList) {
+        try {
+            // Create the campaign for each email
+            const res = await fetch(`${baseUrl}/campaigns`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, target_email, subject, body: bodyText })
+            });
+
+            const result = await res.json();
+            const campaignId = result.campaign_id;
+
+            if (!campaignId) {
+                console.error(`Failed to create campaign for ${target_email}`);
+                errorCount++;
+                continue;  // Skip to the next email
+            }
+
+            console.log(`Campaign created for ${target_email}. Campaign ID: ${campaignId}`);
+
+            // Step 2: Build the final body with phishing content (tracking pixel, click link, etc.)
+            const trackingPixel = `<img src="${baseUrl}/track/open/${campaignId}" width="1" height="1" style="display:none;" alt="tracker">`;
+            const clickLink = `<a href="${baseUrl}/track/click/${campaignId}">Verification-link</a>`;
+            const loginPage = `<a href="${baseUrl}/fake_login/${campaignId}">Sign-In</a>`;
+            const finalBody = `${bodyText}<br><br>${trackingPixel}<br>${clickLink}<br>${loginPage}`;
+
+            // Step 3: Send the email with phishing content to the target email
+            const sendRes = await fetch(`${baseUrl}/send_email/${campaignId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ body: finalBody })
+            });
+
+            const sendResult = await sendRes.json();
+            if (sendResult.success) {
+                console.log(`Email sent to: ${target_email}`);
+                successCount++;
+            } else {
+                console.error(`Failed to send email to: ${target_email}`);
+                errorCount++;
+            }
+
+        } catch (error) {
+            console.error(`Error processing email for ${target_email}: ${error}`);
+            errorCount++;
+        }
+    }
+
+    // Step 4: Provide feedback
+    if (successCount > 0) {
+        alert(`Successfully sent emails to ${successCount} out of ${emailList.length}.`);
+    }
+    if (errorCount > 0) {
+        alert(`Failed to send emails to ${errorCount} out of ${emailList.length}.`);
+    }
+}
+
+    </script>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="sidebar-title">PhishingSim</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-item">
+                    <a href="/dashboard" class="nav-link">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/create" class="nav-link active">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Create Campaign</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/admin/campaigns/view" class="nav-link">
+                        <i class="fas fa-list"></i>
+                        <span>View Campaigns</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/admin/export" class="nav-link">
+                        <i class="fas fa-file-export"></i>
+                        <span>Export Data</span>
+                    </a>
+                </div>
+                <div class="nav-item mt-4">
+                    <a href="/admin/logout" class="nav-link">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="top-bar">
+                <h1 class="page-title">Create Phishing Campaign</h1>
+                <div class="user-menu">
+                    <span class="user-name">Admin</span>
+                    <a href="/admin/logout" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Campaign Details</h2>
+                </div>
+                <div class="card-body">
+                    <form onsubmit="sendCampaign(event)" class="campaign-form">
+                        <div class="form-group">
+                            <label for="campaign-name">Campaign Name</label>
+                            <input type="text" id="campaign-name" name="name" placeholder="e.g., Q2 Security Training" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="target-emails">Target Email(s)</label>
+                            <input type="text" id="target-emails" name="target_emails" placeholder="e.g., email1@domain.com,email2@domain.com" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email-subject">Email Subject</label>
+                            <input type="text" id="email-subject" name="subject" placeholder="e.g., Urgent: Action Required - Password Reset" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email-body">Email Body</label>
+                            <textarea id="email-body" name="body" rows="10" placeholder="Enter the email content here..." required>Hello,
+
+Thank you for signing up.
+
+To complete your registration and verify your account, please click the link below
+
+
+If you did not create this account, you can safely ignore this email.
+
+Thanks,
+The Security Team
+</textarea>
+                            <p class="mt-2 text-secondary">
+                                <small>Use <code>{{tracking_link}}</code> where you want to insert the tracking link.</small>
+                            </p>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Template Library</label>
+                            <div class="row">
+                                <div class="col">
+                                    <a href="/create?template=password-reset" class="btn btn-secondary btn-block mb-2">
+                                        Password Reset
+                                    </a>
+                                </div>
+                                <div class="col">
+                                    <a href="/create?template=document-share" class="btn btn-secondary btn-block mb-2">
+                                        Document Share
+                                    </a>
+                                </div>
+                                <div class="col">
+                                    <a href="/create?template=account-verification" class="btn btn-secondary btn-block mb-2">
+                                        Account Verification
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if success_message %}
+                        <div class="mb-3">
+                            <div class="alert-success">
+                                <i class="fas fa-check-circle"></i>
+                                {{ success_message }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if error_message %}
+                        <div class="mb-3">
+                            <div class="alert-danger">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ error_message }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary">
+                                Create Campaign
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

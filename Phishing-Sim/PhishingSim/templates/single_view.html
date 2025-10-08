@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Details | PhishingSim Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="dashboard">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo"><i class="fas fa-shield-alt"></i></div>
+            <div class="sidebar-title">PhishingSim</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item"><a href="/dashboard" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></div>
+            <div class="nav-item"><a href="/create" class="nav-link"><i class="fas fa-plus-circle"></i><span>Create Campaign</span></a></div>
+            <div class="nav-item"><a href="/admin/campaigns/view" class="nav-link active"><i class="fas fa-list"></i><span>View Campaigns</span></a></div>
+            <div class="nav-item"><a href="/admin/export" class="nav-link"><i class="fas fa-file-export"></i><span>Export Data</span></a></div>
+            <div class="nav-item mt-4"><a href="/admin/logout" class="nav-link"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></div>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="flex items-center gap-2">
+                <a href="/admin/campaigns/view" class="btn btn-sm btn-secondary"><i class="fas fa-arrow-left"></i> Back to Campaigns</a>
+                <h1 class="page-title" id="campaign-name"></h1>
+            </div>
+            <div class="user-menu">
+                <span class="user-name">Admin</span>
+                <a href="/admin/logout" class="btn btn-sm btn-secondary"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header"><h2 class="card-title">Campaign Information</h2></div>
+            <div class="card-body">
+                <div class="campaign-details">
+                    <div class="detail-item"><div class="detail-label">Campaign ID</div><div class="detail-value" id="campaign-id"></div></div>
+                    <div class="detail-item"><div class="detail-label">Target Email</div><div class="detail-value" id="target-email"></div></div>
+                    <div class="detail-item"><div class="detail-label">Subject</div><div class="detail-value" id="subject"></div></div>
+                    <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value" id="status"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header"><h2 class="card-title">Campaign Metrics</h2></div>
+            <div class="card-body">
+                <div class="metrics-grid">
+                    <div class="metric-card"><div class="metric-value" id="metric-sent"></div><div class="metric-label">Email Sent</div></div>
+                    <div class="metric-card"><div class="metric-value" id="metric-opened"></div><div class="metric-label">Email Opened</div></div>
+                    <div class="metric-card"><div class="metric-value" id="metric-clicked"></div><div class="metric-label">Link Clicked</div></div>
+                    <div class="metric-card"><div class="metric-value" id="metric-submitted"></div><div class="metric-label">Credentials Submitted</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4" id="credentials-card" style="display: none;">
+            <div class="card-header"><h2 class="card-title">Submitted Credentials</h2></div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="submitted-username">Username Submitted</label>
+                    <input type="text" id="submitted-username" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="submitted-password">Password Submitted</label>
+                    <input type="text" id="submitted-password" class="form-control" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h2 class="card-title">Email Content</h2></div>
+            <div class="card-body">
+                <div class="email-preview">
+                    <div class="email-header">
+                        <div><strong>From:</strong> IT Department &lt;it@company-secure.com&gt;</div>
+                        <div><strong>To:</strong> <span id="target-email"></span></div>
+                        <div><strong>Subject:</strong> <span id="subject"></span></div>
+                    </div>
+                    <div class="email-body" id="email-body"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const campaignId = {{ campaign_id }};
+
+    fetch(`/admin/campaigns/${campaignId}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('campaign-name').textContent = data.name;
+            document.getElementById('campaign-id').textContent = data.id;
+            document.getElementById('target-email').textContent = data.target_email;
+            document.getElementById('subject').textContent = data.subject;
+
+            let status = "Not Sent";
+            if (data.submitted) status = "Credentials Submitted";
+            else if (data.clicked) status = "Link Clicked";
+            else if (data.opened) status = "Email Opened";
+            else if (data.sent) status = "Email Sent";
+            document.getElementById('status').innerHTML = `<span class="badge badge-${getStatusColor(status)}">${status}</span>`;
+
+            document.getElementById('metric-sent').textContent = data.sent ? "Yes" : "No";
+            document.getElementById('metric-opened').textContent = data.opened ? "Yes" : "No";
+            document.getElementById('metric-clicked').textContent = data.clicked ? "Yes" : "No";
+            document.getElementById('metric-submitted').textContent = data.submitted ? "Yes" : "No";
+
+            if (data.submitted) {
+                document.getElementById('submitted-username').value = data.username_submitted || "N/A";
+                document.getElementById('submitted-password').value = data.password_submitted || "N/A";
+                document.getElementById('credentials-card').style.display = 'block';
+            }
+
+            const bodyHtml = data.body
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\n/g, "<br>")
+                .replace("{{tracking_link}}", '<span class="badge badge-info">TRACKING_LINK</span>');
+
+            document.getElementById('email-body').innerHTML = bodyHtml;
+        });
+
+    function getStatusColor(status) {
+        switch (status) {
+            case "Credentials Submitted": return "danger";
+            case "Link Clicked": return "warning";
+            case "Email Opened": return "info";
+            case "Email Sent": return "success";
+            default: return "secondary";
+        }
+    }
+});
+
+</script>
+</body>
+</html>

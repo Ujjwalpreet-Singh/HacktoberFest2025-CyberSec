@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | PhishingSim Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="sidebar-title">PhishingSim</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-item">
+                    <a href="/dashboard" class="nav-link active">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/create" class="nav-link">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Create Campaign</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/admin/campaigns/view" class="nav-link">
+                        <i class="fas fa-list"></i>
+                        <span>View Campaigns</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/admin/export" class="nav-link">
+                        <i class="fas fa-file-export"></i>
+                        <span>Export Data</span>
+                    </a>
+                </div>
+                <div class="nav-item mt-4">
+                    <a href="/admin/logout" class="nav-link">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="top-bar">
+                <h1 class="page-title">Dashboard</h1>
+                <div class="user-menu">
+                    <span class="user-name">Admin</span>
+                    <a href="/admin/logout" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="stat-title">Total Campaigns</div>
+                            <div class="stat-value">{{ campaigns|length }}</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="stat-title">Emails Sent</div>
+                            <div class="stat-value">{{ campaigns|selectattr('sent', 'eq', true)|list|length }}</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="stat-title">Emails Opened</div>
+                            <div class="stat-value">{{ campaigns|selectattr('opened', 'eq', true)|list|length }}</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-envelope-open"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="stat-title">Links Clicked</div>
+                            <div class="stat-value">{{ campaigns|selectattr('clicked', 'eq', true)|list|length }}</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-mouse-pointer"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="stat-title">Credentials Submitted</div>
+                            <div class="stat-value">{{ campaigns|selectattr('submitted', 'eq', true)|list|length }}</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-key"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="stat-title">Success Rate</div>
+                            {% set sent_count = campaigns|selectattr('sent', 'eq', true)|list|length %}
+                            {% set submitted_count = campaigns|selectattr('submitted', 'eq', true)|list|length %}
+                            {% if sent_count > 0 %}
+                                {% set success_rate = (submitted_count / sent_count * 100)|round(1) %}
+                            {% else %}
+                                {% set success_rate = 0 %}
+                            {% endif %}
+                            <div class="stat-value">{{ success_rate }}%</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Campaigns -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Recent Campaigns</h2>
+                    <a href="/admin/campaigns/view" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Target Email</th>
+                                    <th>Sent</th>
+                                    <th>Opened</th>
+                                    <th>Clicked</th>
+                                    <th>Submitted</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if campaigns %}
+                                    {% for campaign in campaigns[-5:] %}
+                                    <tr>
+                                        <td>{{ campaign.name }}</td>
+                                        <td>{{ campaign.target_email }}</td>
+                                        <td>{{ 'Yes' if campaign.sent else 'No' }}</td>
+                                        <td>{{ 'Yes' if campaign.opened else 'No' }}</td>
+                                        <td>{{ 'Yes' if campaign.clicked else 'No' }}</td>
+                                        <td>{{ 'Yes' if campaign.submitted else 'No' }}</td>
+                                        <td>
+                                            {% if campaign.submitted %}
+                                                <span class="badge badge-danger">Credentials Submitted</span>
+                                            {% elif campaign.clicked %}
+                                                <span class="badge badge-warning">Link Clicked</span>
+                                            {% elif campaign.opened %}
+                                                <span class="badge badge-info">Email Opened</span>
+                                            {% elif campaign.sent %}
+                                                <span class="badge badge-success">Email Sent</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">Not Sent</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a href="/admin/campaigns/view/{{ campaign.id }}" class="btn btn-sm btn-secondary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center">No campaigns found</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
