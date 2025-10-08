@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake Login Alert</title>
+    <style>
+        body {
+            background-color: black;
+            color: red;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 3em;
+            text-shadow: 0 0 10px #ff0000;
+            animation: blink 0.5s infinite alternate;
+        }
+        h2 {
+            font-size: 2em;
+            color: #ff5555;
+        }
+        .gif-container {
+            margin: 30px auto;
+        }
+        .warning {
+            color: yellow;
+            font-size: 1.5em;
+            margin-top: 20px;
+        }
+        .counter {
+            font-size: 1.8em;
+            color: lime;
+            margin-top: 30px;
+        }
+        @keyframes blink {
+            from { opacity: 1; }
+            to { opacity: 0.5; }
+        }
+        .floating {
+            position: absolute;
+            animation: float 5s infinite ease-in-out;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body>
+    <h1>THANK YOU FOR PARTICIPATING</h1>
+    <h2>YOUR INFORMATION HAS BEEN STOLEN</h2>
+    
+    <div class="gif-container">
+        <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcW5nZ3V1b2R5dWJtY3R5a2F4b2R6eWZ0dGx0eGZ5b2V4cGJ3dHZ5eSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT5LMHxhOfscxPfIfm/giphy.gif" alt="Evil Laugh" style="width: 300px;">
+    </div>
+    
+    
+    
+    
+
+    <script>
+        // Fake file deletion counter
+        let count = 0;
+        const counter = document.getElementById('count');
+        const interval = setInterval(() => {
+            count += Math.floor(Math.random() * 10) + 1;
+            if (count > 1024) {
+                count = 1024;
+                clearInterval(interval);
+            }
+            counter.textContent = count;
+        }, 100);
+        
+        // Add floating skulls
+        for (let i = 0; i < 20; i++) {
+            const skull = document.createElement('div');
+            skull.className = 'floating';
+            skull.innerHTML = '💀';
+            skull.style.left = Math.random() * 100 + 'vw';
+            skull.style.top = Math.random() * 100 + 'vh';
+            skull.style.fontSize = (Math.random() * 20 + 10) + 'px';
+            document.body.appendChild(skull);
+        }
+        
+        // Make the page unclosable
+        window.onbeforeunload = function() {
+            return "Are you sure? The virus is still active!";
+        };
+    </script>
+</body>
+</html>
